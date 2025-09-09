@@ -1,0 +1,297 @@
+--// Syllinse UI Library
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local Syllinse = {}
+
+-- Tween helper
+local function tween(obj, props, t)
+    TweenService:Create(obj, TweenInfo.new(t or 0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props):Play()
+end
+
+function Syllinse:CreateWindow(title)
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "SyllinseUI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = game:GetService("CoreGui")
+
+    -- Main Frame
+    local Main = Instance.new("Frame")
+    Main.Size = UDim2.new(0, 420, 0, 300)
+    Main.Position = UDim2.new(0.5, -210, 0.5, -150)
+    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Main.BorderSizePixel = 0
+    Main.Active = true
+    Main.Draggable = true
+    Main.Parent = ScreenGui
+
+    local UICorner = Instance.new("UICorner", Main)
+    UICorner.CornerRadius = UDim.new(0, 14)
+
+    local UIStroke = Instance.new("UIStroke", Main)
+    UIStroke.Thickness = 2
+    UIStroke.Color = Color3.fromRGB(0, 255, 200)
+    UIStroke.Transparency = 0.25
+
+    -- Logo Bar
+    local LogoBar = Instance.new("Frame")
+    LogoBar.Size = UDim2.new(1, 0, 0, 50)
+    LogoBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    LogoBar.Parent = Main
+
+    local LogoCorner = Instance.new("UICorner", LogoBar)
+    LogoCorner.CornerRadius = UDim.new(0, 14)
+
+    local LogoImg = Instance.new("ImageLabel")
+    LogoImg.Size = UDim2.new(0, 40, 0, 40)
+    LogoImg.Position = UDim2.new(0, 5, 0.5, -20)
+    LogoImg.BackgroundTransparency = 1
+    LogoImg.Image = "rbxassetid://109884256700214"
+    LogoImg.Parent = LogoBar
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -55, 1, 0)
+    Title.Position = UDim2.new(0, 50, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = title or "Syllinse Hub"
+    Title.TextColor3 = Color3.fromRGB(0, 255, 200)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 18
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = LogoBar
+
+    -- Tab buttons container
+    local TabBar = Instance.new("Frame")
+    TabBar.Size = UDim2.new(0, 120, 1, -55)
+    TabBar.Position = UDim2.new(0, 0, 0, 55)
+    TabBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    TabBar.Parent = Main
+
+    local TabLayout = Instance.new("UIListLayout", TabBar)
+    TabLayout.Padding = UDim.new(0, 6)
+    TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    -- Pages container
+    local Pages = Instance.new("Frame")
+    Pages.Size = UDim2.new(1, -130, 1, -55)
+    Pages.Position = UDim2.new(0, 130, 0, 55)
+    Pages.BackgroundTransparency = 1
+    Pages.Parent = Main
+
+    local Window = {}
+    local tabs = {}
+
+    -- Tab Creation
+    function Window:AddTab(name)
+        local TabBtn = Instance.new("TextButton")
+        TabBtn.Size = UDim2.new(1, -10, 0, 35)
+        TabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+        TabBtn.Text = name
+        TabBtn.TextColor3 = Color3.new(1,1,1)
+        TabBtn.Font = Enum.Font.GothamSemibold
+        TabBtn.TextSize = 14
+        TabBtn.AutoButtonColor = false
+        TabBtn.Parent = TabBar
+
+        local BtnCorner = Instance.new("UICorner", TabBtn)
+        BtnCorner.CornerRadius = UDim.new(0, 10)
+
+        local Page = Instance.new("ScrollingFrame")
+        Page.Size = UDim2.new(1, 0, 1, 0)
+        Page.BackgroundTransparency = 1
+        Page.CanvasSize = UDim2.new(0,0,0,0)
+        Page.ScrollBarThickness = 4
+        Page.Visible = false
+        Page.Parent = Pages
+
+        local List = Instance.new("UIListLayout", Page)
+        List.Padding = UDim.new(0, 8)
+        List.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        List.SortOrder = Enum.SortOrder.LayoutOrder
+
+        tabs[name] = Page
+
+        TabBtn.MouseButton1Click:Connect(function()
+            for _, p in pairs(Pages:GetChildren()) do
+                if p:IsA("ScrollingFrame") then
+                    p.Visible = false
+                end
+            end
+            Page.Visible = true
+            for _, b in pairs(TabBar:GetChildren()) do
+                if b:IsA("TextButton") then
+                    tween(b, {BackgroundColor3 = Color3.fromRGB(40, 40, 55)}, 0.2)
+                end
+            end
+            tween(TabBtn, {BackgroundColor3 = Color3.fromRGB(0, 200, 150)}, 0.2)
+        end)
+
+        -- Auto-select first tab
+        if #Pages:GetChildren() == 1 then
+            TabBtn.MouseButton1Click:Fire()
+        end
+
+        local Tab = {}
+
+        function Tab:AddButton(text, callback)
+            local Button = Instance.new("TextButton")
+            Button.Size = UDim2.new(0.95, 0, 0, 35)
+            Button.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+            Button.Text = text
+            Button.TextColor3 = Color3.new(1,1,1)
+            Button.Font = Enum.Font.GothamSemibold
+            Button.TextSize = 14
+            Button.AutoButtonColor = false
+            Button.Parent = Page
+
+            local BtnCorner = Instance.new("UICorner", Button)
+            BtnCorner.CornerRadius = UDim.new(0, 10)
+
+            Button.MouseButton1Click:Connect(function()
+                tween(Button, {BackgroundColor3 = Color3.fromRGB(0, 200, 150)}, 0.15)
+                task.wait(0.15)
+                tween(Button, {BackgroundColor3 = Color3.fromRGB(50, 50, 65)}, 0.15)
+                if callback then callback() end
+            end)
+        end
+
+        function Tab:AddToggle(text, default, callback)
+            local state = default or false
+            local Toggle = Instance.new("TextButton")
+            Toggle.Size = UDim2.new(0.95, 0, 0, 35)
+            Toggle.BackgroundColor3 = state and Color3.fromRGB(0, 200, 120) or Color3.fromRGB(60, 60, 75)
+            Toggle.Text = text .. (state and " [ON]" or " [OFF]")
+            Toggle.TextColor3 = Color3.new(1,1,1)
+            Toggle.Font = Enum.Font.GothamSemibold
+            Toggle.TextSize = 14
+            Toggle.AutoButtonColor = false
+            Toggle.Parent = Page
+
+            local TgCorner = Instance.new("UICorner", Toggle)
+            TgCorner.CornerRadius = UDim.new(0, 10)
+
+            Toggle.MouseButton1Click:Connect(function()
+                state = not state
+                Toggle.Text = text .. (state and " [ON]" or " [OFF]")
+                tween(Toggle, {
+                    BackgroundColor3 = state and Color3.fromRGB(0, 200, 120) or Color3.fromRGB(60, 60, 75)
+                }, 0.2)
+                if callback then callback(state) end
+            end)
+        end
+
+        function Tab:AddSlider(text, min, max, default, callback)
+            local SliderFrame = Instance.new("Frame")
+            SliderFrame.Size = UDim2.new(0.95, 0, 0, 40)
+            SliderFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+            SliderFrame.Parent = Page
+
+            local SCorner = Instance.new("UICorner", SliderFrame)
+            SCorner.CornerRadius = UDim.new(0, 10)
+
+            local Label = Instance.new("TextLabel")
+            Label.Size = UDim2.new(1, 0, 0, 20)
+            Label.BackgroundTransparency = 1
+            Label.Text = text .. ": " .. default
+            Label.TextColor3 = Color3.new(1,1,1)
+            Label.Font = Enum.Font.Gotham
+            Label.TextSize = 13
+            Label.Parent = SliderFrame
+
+            local Bar = Instance.new("Frame")
+            Bar.Size = UDim2.new(1, -10, 0, 10)
+            Bar.Position = UDim2.new(0, 5, 0, 25)
+            Bar.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+            Bar.Parent = SliderFrame
+
+            local BCorner = Instance.new("UICorner", Bar)
+            BCorner.CornerRadius = UDim.new(0, 8)
+
+            local Fill = Instance.new("Frame")
+            Fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
+            Fill.BackgroundColor3 = Color3.fromRGB(0, 200, 150)
+            Fill.Parent = Bar
+
+            local FCorner = Instance.new("UICorner", Fill)
+            FCorner.CornerRadius = UDim.new(0, 8)
+
+            local dragging = false
+            Bar.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true
+                end
+            end)
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
+                end
+            end)
+            UserInputService.InputChanged:Connect(function(input)
+                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    local rel = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+                    Fill.Size = UDim2.new(rel,0,1,0)
+                    local value = math.floor(min + (max-min)*rel)
+                    Label.Text = text .. ": " .. value
+                    if callback then callback(value) end
+                end
+            end)
+        end
+
+        function Tab:AddDropdown(text, options, callback)
+            local Drop = Instance.new("TextButton")
+            Drop.Size = UDim2.new(0.95, 0, 0, 35)
+            Drop.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
+            Drop.Text = text .. " ▼"
+            Drop.TextColor3 = Color3.new(1,1,1)
+            Drop.Font = Enum.Font.GothamSemibold
+            Drop.TextSize = 14
+            Drop.AutoButtonColor = false
+            Drop.Parent = Page
+
+            local DCorner = Instance.new("UICorner", Drop)
+            DCorner.CornerRadius = UDim.new(0, 10)
+
+            local Open = false
+            Drop.MouseButton1Click:Connect(function()
+                if Open then
+                    for _,c in pairs(Page:GetChildren()) do
+                        if c.Name == "Option" then c:Destroy() end
+                    end
+                    Drop.Text = text .. " ▼"
+                else
+                    for _,opt in pairs(options) do
+                        local Opt = Instance.new("TextButton")
+                        Opt.Name = "Option"
+                        Opt.Size = UDim2.new(0.9, 0, 0, 30)
+                        Opt.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+                        Opt.Text = opt
+                        Opt.TextColor3 = Color3.new(1,1,1)
+                        Opt.Font = Enum.Font.Gotham
+                        Opt.TextSize = 13
+                        Opt.Parent = Page
+
+                        local OCorner = Instance.new("UICorner", Opt)
+                        OCorner.CornerRadius = UDim.new(0, 8)
+
+                        Opt.MouseButton1Click:Connect(function()
+                            Drop.Text = text .. ": " .. opt
+                            if callback then callback(opt) end
+                            for _,c in pairs(Page:GetChildren()) do
+                                if c.Name == "Option" then c:Destroy() end
+                            end
+                            Open = false
+                        end)
+                    end
+                    Drop.Text = text .. " ▲"
+                end
+                Open = not Open
+            end)
+        end
+
+        return Tab
+    end
+
+    return Window
+end
+
+return Syllinse
