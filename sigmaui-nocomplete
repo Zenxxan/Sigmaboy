@@ -201,8 +201,8 @@ function Syllinse.CreateWindow(libName, logoId)
     profilePic.Position = UDim2.new(0.05, 0, 0.06, 0)
     profilePic.Size = UDim2.new(0, 35, 0, 35) 
     profilePic.ZIndex = 2
-    profilePic.Image = ''
     profilePic.ScaleType = Enum.ScaleType.Crop 
+    profilePic.Image = ''
 
     
     local corner = Instance.new('UICorner')
@@ -210,8 +210,14 @@ function Syllinse.CreateWindow(libName, logoId)
     corner.Parent = profilePic
 
     
+    local stroke = Instance.new('UIStroke')
+    stroke.Parent = profilePic
+    stroke.Thickness = 1.5
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+
+    
     local thumbType = Enum.ThumbnailType.HeadShot
-    local thumbSize = Enum.ThumbnailSize.Size100x100
+    local thumbSize = Enum.ThumbnailSize.Size420x420 
     local content, isReady =
         Players:GetUserThumbnailAsync(LocalPlayer.UserId, thumbType, thumbSize)
     profilePic.Image = content
