@@ -1,0 +1,363 @@
+-- Syllinse UI Library (Black & White Theme)
+local Syllinse = {}
+
+function Syllinse.CreateWindow(libName, logoId)
+    local SyllinseLib = Instance.new("ScreenGui")
+    local shadow = Instance.new("ImageLabel")
+    local MainFrame = Instance.new("Frame")
+    local sideHeading = Instance.new("Frame")
+    local hubLogo = Instance.new("ImageLabel")
+    local hubName = Instance.new("TextLabel")
+    local tabFrame = Instance.new("ScrollingFrame")
+    local UIListLayout = Instance.new("UIListLayout")
+    local usename = Instance.new("TextLabel")
+    local framesAll = Instance.new("Frame")
+    local pageFolder = Instance.new("Folder")
+
+    libName = libName or "Syllinse"
+    logoId = logoId or ""
+
+    -- Main Window
+    SyllinseLib.Name = "Syllinse"..libName
+    SyllinseLib.Parent = game.CoreGui
+    SyllinseLib.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    MainFrame.Parent = shadow
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    MainFrame.Size = UDim2.new(0, 553, 0, 452)
+
+    sideHeading.Parent = MainFrame
+    sideHeading.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+    sideHeading.Size = UDim2.new(0, 155, 0, 452)
+
+    hubLogo.Parent = sideHeading
+    hubLogo.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    hubLogo.Size = UDim2.new(0, 30, 0, 30)
+    hubLogo.Image = "rbxassetid://"..logoId
+
+    hubName.Parent = sideHeading
+    hubName.BackgroundTransparency = 1
+    hubName.Text = libName
+    hubName.TextColor3 = Color3.fromRGB(255, 255, 255)
+    hubName.Font = Enum.Font.GothamSemibold
+    hubName.TextSize = 14
+    hubName.TextXAlignment = Enum.TextXAlignment.Left
+
+    usename.Parent = sideHeading
+    usename.BackgroundTransparency = 1
+    usename.Text = game.Players.LocalPlayer.Name
+    usename.TextColor3 = Color3.fromRGB(180, 180, 180)
+    usename.Font = Enum.Font.GothamSemibold
+    usename.TextSize = 12
+
+    framesAll.Parent = MainFrame
+    framesAll.BackgroundTransparency = 1
+    framesAll.Position = UDim2.new(0.296, 0, 0.024, 0)
+    framesAll.Size = UDim2.new(0, 381, 0, 431)
+
+    shadow.Parent = SyllinseLib
+    shadow.BackgroundTransparency = 1
+    shadow.Position = UDim2.new(0.32, 0, 0.17, 0)
+    shadow.Size = UDim2.new(0, 609, 0, 530)
+    shadow.Image = "http://www.roblox.com/asset/?id=6105530152"
+    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.ImageTransparency = 0.2
+
+    pageFolder.Parent = framesAll
+
+    -- TAB HANDLING
+    local TabHandling = {}
+
+    function TabHandling:Tab(tabText, tabId)
+        local tabBtnFrame = Instance.new("Frame")
+        local tabBtn = Instance.new("TextButton")
+        local tabLogo = Instance.new("ImageLabel")
+
+        tabText = tabText or "Tab"
+        tabId = tabId or ""
+
+        tabBtnFrame.Parent = tabFrame
+        tabBtnFrame.BackgroundTransparency = 1
+        tabBtnFrame.Size = UDim2.new(0, 135, 0, 30)
+
+        tabBtn.Parent = tabBtnFrame
+        tabBtn.BackgroundTransparency = 1
+        tabBtn.Size = UDim2.new(0, 101, 0, 30)
+        tabBtn.Font = Enum.Font.Gotham
+        tabBtn.Text = tabText
+        tabBtn.TextColor3 = Color3.fromRGB(180, 180, 180) -- inactive gray
+        tabBtn.TextSize = 14
+        tabBtn.TextXAlignment = Enum.TextXAlignment.Left
+
+        tabLogo.Parent = tabBtnFrame
+        tabLogo.BackgroundTransparency = 1
+        tabLogo.Size = UDim2.new(0, 25, 0, 25)
+        tabLogo.Image = "rbxassetid://"..tabId
+        tabLogo.ImageColor3 = Color3.fromRGB(180, 180, 180)
+
+        local newPage = Instance.new("ScrollingFrame")
+        newPage.Parent = pageFolder
+        newPage.BackgroundTransparency = 1
+        newPage.Size = UDim2.new(1, 0, 1, 0)
+        newPage.Visible = false
+
+        tabBtn.MouseButton1Click:Connect(function()
+            for _, v in ipairs(pageFolder:GetChildren()) do
+                v.Visible = false
+            end
+            newPage.Visible = true
+            for _, v in ipairs(tabFrame:GetChildren()) do
+                if v:IsA("Frame") then
+                    for _, c in ipairs(v:GetChildren()) do
+                        if c:IsA("TextButton") then
+                            c.TextColor3 = Color3.fromRGB(180, 180, 180)
+                        elseif c:IsA("ImageLabel") then
+                            c.ImageColor3 = Color3.fromRGB(180, 180, 180)
+                        end
+                    end
+                end
+            end
+            tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            tabLogo.ImageColor3 = Color3.fromRGB(255, 255, 255)
+        end)
+
+        -- SECTION HANDLING
+        local SectionHandling = {}
+
+        function SectionHandling:Section(sectionText)
+            local sectionFrame = Instance.new("Frame")
+            sectionFrame.Parent = newPage
+            sectionFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            sectionFrame.Size = UDim2.new(1, -5, 0, 36)
+
+            local sectionLabel = Instance.new("TextLabel")
+            sectionLabel.Parent = sectionFrame
+            sectionLabel.BackgroundTransparency = 1
+            sectionLabel.Size = UDim2.new(1, -10, 1, 0)
+            sectionLabel.Font = Enum.Font.GothamSemibold
+            sectionLabel.Text = sectionText or "Section"
+            sectionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            sectionLabel.TextSize = 14
+            sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+            local ItemHandling = {}
+
+            -- BUTTON
+            function ItemHandling:Button(text, callback)
+                local btn = Instance.new("TextButton")
+                btn.Parent = sectionFrame
+                btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+                btn.Size = UDim2.new(1, -10, 0, 30)
+                btn.Font = Enum.Font.GothamSemibold
+                btn.Text = text or "Button"
+                btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+                btn.TextSize = 14
+
+                btn.MouseEnter:Connect(function()
+                    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                end)
+                btn.MouseLeave:Connect(function()
+                    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+                end)
+                btn.MouseButton1Click:Connect(callback or function() end)
+            end
+
+            -- TOGGLE
+            function ItemHandling:Toggle(text, callback)
+                local frame = Instance.new("Frame")
+                frame.Parent = sectionFrame
+                frame.BackgroundTransparency = 1
+                frame.Size = UDim2.new(1, -10, 0, 30)
+
+                local check = Instance.new("TextButton")
+                check.Parent = frame
+                check.Size = UDim2.new(0, 25, 0, 25)
+                check.Text = ""
+                check.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+
+                local label = Instance.new("TextLabel")
+                label.Parent = frame
+                label.Position = UDim2.new(0.1, 0, 0, 0)
+                label.Size = UDim2.new(0.9, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.Font = Enum.Font.GothamSemibold
+                label.Text = text or "Toggle"
+                label.TextColor3 = Color3.fromRGB(180, 180, 180)
+                label.TextXAlignment = Enum.TextXAlignment.Left
+
+                local on = false
+                check.MouseButton1Click:Connect(function()
+                    on = not on
+                    callback(on)
+                    if on then
+                        check.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    else
+                        check.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                        label.TextColor3 = Color3.fromRGB(180, 180, 180)
+                    end
+                end)
+            end
+
+            -- SLIDER
+            function ItemHandling:Slider(text, min, max, callback)
+                local frame = Instance.new("Frame")
+                frame.Parent = sectionFrame
+                frame.BackgroundTransparency = 1
+                frame.Size = UDim2.new(1, -10, 0, 40)
+
+                local bar = Instance.new("Frame")
+                bar.Parent = frame
+                bar.Position = UDim2.new(0.05, 0, 0.6, 0)
+                bar.Size = UDim2.new(0.9, 0, 0, 6)
+                bar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+
+                local fill = Instance.new("Frame")
+                fill.Parent = bar
+                fill.Size = UDim2.new(0, 0, 1, 0)
+                fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+
+                local label = Instance.new("TextLabel")
+                label.Parent = frame
+                label.Size = UDim2.new(1, 0, 0.5, 0)
+                label.BackgroundTransparency = 1
+                label.Text = text or "Slider"
+                label.Font = Enum.Font.GothamSemibold
+                label.TextSize = 14
+                label.TextColor3 = Color3.fromRGB(200, 200, 200)
+
+                local uis = game:GetService("UserInputService")
+                local mouse = game.Players.LocalPlayer:GetMouse()
+                bar.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        local conn
+                        conn = uis.InputChanged:Connect(function(i)
+                            if i.UserInputType == Enum.UserInputType.MouseMovement then
+                                local pct = math.clamp((mouse.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+                                fill.Size = UDim2.new(pct, 0, 1, 0)
+                                local val = math.floor(min + (max - min) * pct)
+                                callback(val)
+                            end
+                        end)
+                        uis.InputEnded:Connect(function(i)
+                            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                                conn:Disconnect()
+                            end
+                        end)
+                    end
+                end)
+            end
+
+            -- DROPDOWN
+            function ItemHandling:Dropdown(text, list, callback)
+                local frame = Instance.new("Frame")
+                frame.Parent = sectionFrame
+                frame.Size = UDim2.new(1, -10, 0, 30)
+                frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+
+                local label = Instance.new("TextLabel")
+                label.Parent = frame
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.Text = text or "Dropdown"
+                label.Font = Enum.Font.GothamSemibold
+                label.TextColor3 = Color3.fromRGB(200, 200, 200)
+                label.TextXAlignment = Enum.TextXAlignment.Left
+
+                local dropdownOpen = false
+                local optionsFrame = Instance.new("Frame")
+                optionsFrame.Parent = sectionFrame
+                optionsFrame.Size = UDim2.new(1, -10, 0, 0)
+                optionsFrame.BackgroundTransparency = 1
+                optionsFrame.ClipsDescendants = true
+
+                frame.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        dropdownOpen = not dropdownOpen
+                        optionsFrame.Size = dropdownOpen and UDim2.new(1, -10, 0, #list * 25) or UDim2.new(1, -10, 0, 0)
+                    end
+                end)
+
+                for _, v in ipairs(list or {}) do
+                    local opt = Instance.new("TextButton")
+                    opt.Parent = optionsFrame
+                    opt.Size = UDim2.new(1, 0, 0, 25)
+                    opt.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+                    opt.Text = v
+                    opt.Font = Enum.Font.GothamSemibold
+                    opt.TextColor3 = Color3.fromRGB(200, 200, 200)
+                    opt.TextSize = 14
+
+                    opt.MouseEnter:Connect(function()
+                        opt.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    end)
+                    opt.MouseLeave:Connect(function()
+                        opt.TextColor3 = Color3.fromRGB(200, 200, 200)
+                    end)
+
+                    opt.MouseButton1Click:Connect(function()
+                        callback(v)
+                        label.Text = v
+                        dropdownOpen = false
+                        optionsFrame.Size = UDim2.new(1, -10, 0, 0)
+                    end)
+                end
+            end
+
+            -- TEXTBOX
+            function ItemHandling:TextBox(placeholder, callback)
+                local box = Instance.new("TextBox")
+                box.Parent = sectionFrame
+                box.Size = UDim2.new(1, -10, 0, 30)
+                box.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+                box.Font = Enum.Font.GothamSemibold
+                box.PlaceholderText = placeholder or "Enter text..."
+                box.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+                box.Text = ""
+                box.TextColor3 = Color3.fromRGB(255, 255, 255)
+                box.TextSize = 14
+
+                box.FocusLost:Connect(function(enter)
+                    if enter then
+                        callback(box.Text)
+                        box.Text = ""
+                    end
+                end)
+            end
+
+            -- LABEL
+            function ItemHandling:Label(text)
+                local lbl = Instance.new("TextLabel")
+                lbl.Parent = sectionFrame
+                lbl.Size = UDim2.new(1, -10, 0, 25)
+                lbl.BackgroundTransparency = 1
+                lbl.Font = Enum.Font.GothamSemibold
+                lbl.Text = text or "Label"
+                lbl.TextSize = 14
+                lbl.TextColor3 = Color3.fromRGB(200, 200, 200)
+                lbl.TextXAlignment = Enum.TextXAlignment.Left
+            end
+
+            -- CREDIT
+            function ItemHandling:Credit(name)
+                local lbl = Instance.new("TextLabel")
+                lbl.Parent = sectionFrame
+                lbl.Size = UDim2.new(1, -10, 0, 25)
+                lbl.BackgroundTransparency = 1
+                lbl.Font = Enum.Font.Gotham
+                lbl.Text = "  "..(name or "Credit")
+                lbl.TextSize = 14
+                lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+                lbl.TextXAlignment = Enum.TextXAlignment.Left
+            end
+
+            return ItemHandling
+        end
+
+        return SectionHandling
+    end
+
+    return TabHandling
+end
+
+return Syllinse
