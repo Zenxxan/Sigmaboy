@@ -201,8 +201,9 @@ function Syllinse.CreateWindow(libName, logoId)
     profilePic.Position = UDim2.new(0.05, 0, 0.06, 0)
     profilePic.Size = UDim2.new(0, 35, 0, 35) 
     profilePic.ZIndex = 2
-    profilePic.ScaleType = Enum.ScaleType.Crop 
     profilePic.Image = ''
+    profilePic.ScaleType = Enum.ScaleType.Crop 
+    profilePic.ClipsDescendants = true
 
     
     local corner = Instance.new('UICorner')
