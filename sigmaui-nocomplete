@@ -194,31 +194,45 @@ function Syllinse.CreateWindow(libName, logoId)
     local Players = game:GetService('Players')
     local LocalPlayer = Players.LocalPlayer
 
-    local profilePic = Instance.new('ImageLabel')
-    profilePic.Name = 'profilePic'
-    profilePic.Parent = sideHeading
-    profilePic.BackgroundTransparency = 1
-    profilePic.Position = UDim2.new(0.05, 0, 0.06, 0)
-    profilePic.Size = UDim2.new(0, 35, 0, 35) 
-    profilePic.ZIndex = 2
-    profilePic.Image = ''
-    profilePic.ScaleType = Enum.ScaleType.Crop 
-    profilePic.ClipsDescendants = true
+    local profileFrame = Instance.new('Frame')
+    profileFrame.Name = 'profileFrame'
+    profileFrame.Parent = sideHeading
+    profileFrame.Position = UDim2.new(0.05, 0, 0.06, 0)
+    profileFrame.Size = UDim2.new(0, 35, 0, 35)
+    profileFrame.BackgroundColor3 = Color3.fromRGB(21, 21, 21) 
+    profileFrame.BackgroundTransparency = 0
+    profileFrame.ZIndex = 2
 
     
+    local frameCorner = Instance.new('UICorner')
+    frameCorner.CornerRadius = UDim.new(1, 0)
+    frameCorner.Parent = profileFrame
+
+    
+    local stroke = Instance.new('UIStroke')
+    stroke.Parent = profileFrame
+    stroke.Thickness = 1.5
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+
+    -- actual profile image INSIDE the frame
+    local profilePic = Instance.new('ImageLabel')
+    profilePic.Name = 'profilePic'
+    profilePic.Parent = profileFrame
+    profilePic.BackgroundTransparency = 1
+    profilePic.Size = UDim2.new(1, -4, 1, -4) 
+    profilePic.Position = UDim2.new(0, 2, 0, 2)
+    profilePic.ZIndex = 3
+    profilePic.ScaleType = Enum.ScaleType.Crop
+
     local corner = Instance.new('UICorner')
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = profilePic
 
     
-    local stroke = Instance.new('UIStroke')
-    stroke.Parent = profilePic
-    stroke.Thickness = 1.5
-    stroke.Color = Color3.fromRGB(255, 255, 255)
-
-    
+    local Players = game:GetService('Players')
+    local LocalPlayer = Players.LocalPlayer
     local thumbType = Enum.ThumbnailType.HeadShot
-    local thumbSize = Enum.ThumbnailSize.Size420x420 
+    local thumbSize = Enum.ThumbnailSize.Size420x420
     local content, isReady =
         Players:GetUserThumbnailAsync(LocalPlayer.UserId, thumbType, thumbSize)
     profilePic.Image = content
