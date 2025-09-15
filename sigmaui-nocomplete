@@ -194,37 +194,38 @@ function Syllinse.CreateWindow(libName, logoId)
     local Players = game:GetService('Players')
     local LocalPlayer = Players.LocalPlayer
 
-
     local profilePic = Instance.new('ImageLabel')
     profilePic.Name = 'profilePic'
     profilePic.Parent = sideHeading
     profilePic.BackgroundTransparency = 1
-    profilePic.Position = UDim2.new(0.05, 0, 0.06, 0) 
-    profilePic.Size = UDim2.new(0, 25, 0, 25)
+    profilePic.Position = UDim2.new(0.05, 0, 0.06, 0)
+    profilePic.Size = UDim2.new(0, 35, 0, 35) 
     profilePic.ZIndex = 2
+    profilePic.Image = ''
+    profilePic.ScaleType = Enum.ScaleType.Crop 
 
-
+    
     local corner = Instance.new('UICorner')
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = profilePic
 
+    
     local thumbType = Enum.ThumbnailType.HeadShot
     local thumbSize = Enum.ThumbnailSize.Size100x100
     local content, isReady =
         Players:GetUserThumbnailAsync(LocalPlayer.UserId, thumbType, thumbSize)
     profilePic.Image = content
 
-   
     local usename = Instance.new('TextLabel')
     usename.Name = 'usename'
     usename.Parent = sideHeading
     usename.BackgroundTransparency = 1
-    usename.Position = UDim2.new(0.30, 0, 0.07, 0) 
+    usename.Position = UDim2.new(0.30, 0, 0.07, 0)
     usename.Size = UDim2.new(0, 110, 0, 16)
     usename.ZIndex = 2
     usename.Font = Enum.Font.GothamSemibold
     usename.Text = LocalPlayer.Name
-    usename.TextColor3 = Color3.fromRGB(255, 255, 255) 
+    usename.TextColor3 = Color3.fromRGB(255, 255, 255)
     usename.TextSize = 12
     usename.TextWrapped = true
     usename.TextXAlignment = Enum.TextXAlignment.Left
