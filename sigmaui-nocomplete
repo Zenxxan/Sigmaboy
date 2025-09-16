@@ -195,7 +195,7 @@ function Syllinse.CreateWindow(libName, logoId)
     profilePic.Name = 'profilePic'
     profilePic.Parent = sideHeading
     profilePic.BackgroundTransparency = 1
-    profilePic.Position = UDim2.new(0, 0, 0, 0)
+    profilePic.Position = UDim2.new(0.03, 0, 0.02, 0)
     profilePic.Size = UDim2.new(0, 35, 0, 35)
     profilePic.ZIndex = 2
     profilePic.ScaleType = Enum.ScaleType.Fit -- keep aspect ratio
