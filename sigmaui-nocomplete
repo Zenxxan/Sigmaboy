@@ -136,7 +136,7 @@ function Syllinse.CreateWindow(libName, logoId)
     sideHeading.Name = 'sideHeading'
     sideHeading.Parent = MainFrame
     sideHeading.BackgroundColor3 = Color3.fromRGB(21, 21, 21)
-    sideHeading.Size = UDim2.new(0, 155, 0, 452)
+    sideHeading.Size = UDim2.new(0, 155, 0, 500)
     sideHeading.ZIndex = 2
 
     MainCorner.CornerRadius = UDim.new(0, 5)
