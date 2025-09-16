@@ -136,7 +136,7 @@ function Syllinse.CreateWindow(libName, logoId)
     sideHeading.Name = 'sideHeading'
     sideHeading.Parent = MainFrame
     sideHeading.BackgroundColor3 = Color3.fromRGB(21, 21, 21)
-    sideHeading.Size = UDim2.new(0, 155, 0, 500)
+    sideHeading.Size = UDim2.new(0, 155, 0, 452)
     sideHeading.ZIndex = 2
 
     MainCorner.CornerRadius = UDim.new(0, 5)
@@ -198,41 +198,12 @@ function Syllinse.CreateWindow(libName, logoId)
     profilePic.Position = UDim2.new(0.01, 0, 0.01, 0)
     profilePic.Size = UDim2.new(0, 35, 0, 35)
     profilePic.ZIndex = 2
-    profilePic.ScaleType = Enum.ScaleType.Fit -- keep aspect ratio
+    profilePic.ScaleType = Enum.ScaleType.Fit
 
-    -- ❌ remove UICorner because Roblox headshot is already circular
-    -- local corner = Instance.new('UICorner')
-    -- corner.CornerRadius = UDim.new(1, 0)
-    -- corner.Parent = profilePic
-
-    local Players = game:GetService('Players')
-    local LocalPlayer = Players.LocalPlayer
-
-    local thumbType = Enum.ThumbnailType.HeadShot
-    local thumbSize = Enum.ThumbnailSize.Size420x420
-
-    -- function to update thumbnail
-    local function updateThumbnail()
-        local content, isReady = Players:GetUserThumbnailAsync(
-            LocalPlayer.UserId,
-            thumbType,
-            thumbSize
-        )
-        if isReady then
-            profilePic.Image = content
-        else
-            profilePic.Image = 'rbxassetid://6031075931' -- fallback icon
-        end
-    end
-
-    -- initial load
-    updateThumbnail()
-
-    -- update when avatar appearance changes
-    LocalPlayer.CharacterAppearanceLoaded:Connect(function()
-        task.wait(1) -- tiny delay so Roblox processes new appearance
-        updateThumbnail()
-    end)
+    
+    local circle = Instance.new('UICorner')
+    circle.CornerRadius = UDim.new(1, 0)
+    circle.Parent = profilePic
 
     local usename = Instance.new('TextLabel')
     usename.Name = 'usename'
