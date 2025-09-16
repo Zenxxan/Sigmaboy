@@ -191,9 +191,6 @@ function Syllinse.CreateWindow(libName, logoId)
     UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     UIListLayout.Padding = UDim.new(0, 5)
 
-    local Players = game:GetService('Players')
-    local LocalPlayer = Players.LocalPlayer
-
     local profilePic = Instance.new('ImageLabel')
     profilePic.Name = 'profilePic'
     profilePic.Parent = sideHeading
@@ -201,19 +198,42 @@ function Syllinse.CreateWindow(libName, logoId)
     profilePic.Position = UDim2.new(0.02, 0, 0.01, 0)
     profilePic.Size = UDim2.new(0, 35, 0, 35)
     profilePic.ZIndex = 2
-    profilePic.ScaleType = Enum.ScaleType.Crop 
+    profilePic.ScaleType = Enum.ScaleType.Fit -- safer than Crop
 
-   
     local corner = Instance.new('UICorner')
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = profilePic
 
-    
+    -- thumbnail fetch
     local thumbType = Enum.ThumbnailType.HeadShot
     local thumbSize = Enum.ThumbnailSize.Size420x420
-    local content, isReady =
-        Players:GetUserThumbnailAsync(LocalPlayer.UserId, thumbType, thumbSize)
-    profilePic.Image = content
+
+    local Players = game:GetService('Players')
+    local LocalPlayer = Players.LocalPlayer
+
+    task.spawn(function()
+        local content, isReady = Players:GetUserThumbnailAsync(
+            LocalPlayer.UserId,
+            thumbType,
+            thumbSize
+        )
+        if isReady then
+            profilePic.Image = content
+        else
+            -- retry after a short delay if Roblox servers weren’t ready yet
+            task.wait(1)
+            local retry, ok = Players:GetUserThumbnailAsync(
+                LocalPlayer.UserId,
+                thumbType,
+                thumbSize
+            )
+            if ok then
+                profilePic.Image = retry
+            else
+                profilePic.Image = 'rbxassetid://6031075931' -- fallback icon
+            end
+        end
+    end)
 
     local usename = Instance.new('TextLabel')
     usename.Name = 'usename'
