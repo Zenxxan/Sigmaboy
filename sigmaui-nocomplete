@@ -156,7 +156,7 @@ function Syllinse.CreateWindow(libName, logoId)
     hubLogo.Position = UDim2.new(0.0567928664, 0, 0.0243411884, 0)
     hubLogo.Size = UDim2.new(0, 30, 0, 30)
     hubLogo.ZIndex = 2
-    hubLogo.Image = 'rbxassetid://' .. logoId
+    hubLogo.Image = 'rbxassetid://109884256700214' .. logoId
 
     MainCorner_2.CornerRadius = UDim.new(0, 999)
     MainCorner_2.Name = 'MainCorner'
@@ -190,23 +190,6 @@ function Syllinse.CreateWindow(libName, logoId)
     UIListLayout.Parent = tabFrame
     UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     UIListLayout.Padding = UDim.new(0, 5)
-
-    local Players = game:GetService('Players')
-    local LocalPlayer = Players.LocalPlayer
-
-    local profilePic = Instance.new('ImageLabel')
-    profilePic.Name = 'profilePic'
-    profilePic.Parent = sideHeading
-    profilePic.BackgroundTransparency = 1
-    profilePic.Position = UDim2.new(0.01, 0, 0.01, 0)
-    profilePic.Size = UDim2.new(0, 35, 0, 35)
-    profilePic.ZIndex = 2
-    profilePic.ScaleType = Enum.ScaleType.Fit
-
-    
-    local circle = Instance.new('UICorner')
-    circle.CornerRadius = UDim.new(1, 0)
-    circle.Parent = profilePic
 
     local usename = Instance.new('TextLabel')
     usename.Name = 'usename'
