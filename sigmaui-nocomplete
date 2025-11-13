@@ -39,7 +39,7 @@ end
 local og_unpack = unpack or table.unpack
 local og_load = loadstring
 
--- Enhanced table formatting with bytecode detection
+-- Simple table formatting
 local function fmt(tbl, indent)
     indent = indent or 0
     local spacing = string.rep("  ", indent)
@@ -60,19 +60,32 @@ local function fmt(tbl, indent)
     return result
 end
 
--- Bytecode analysis functions
+-- MUCH SIMPLER bytecode detection
 local function isBytecodeTable(tbl)
-    if type(tbl) ~= "table" or #tbl == 0 then return false end
+    if type(tbl) ~= "table" then return false end
     
-    -- Check if it has bytecode structure: nested tables with numbers
-    for i, item in ipairs(tbl) do
+    -- Check if it's a nested table structure (common in obfuscators)
+    local nestedCount = 0
+    local totalItems = 0
+    
+    for _, item in pairs(tbl) do
+        totalItems = totalItems + 1
         if type(item) == "table" then
-            -- Check if first element is a number (opcode)
-            if type(item[1]) == "number" then
-                return true
+            nestedCount = nestedCount + 1
+            -- Check if nested table has numbers (potential bytecode)
+            for k, v in pairs(item) do
+                if type(k) == "number" and type(v) == "number" then
+                    return true
+                end
             end
         end
     end
+    
+    -- If most items are nested tables, likely bytecode
+    if totalItems > 0 and (nestedCount / totalItems) > 0.5 then
+        return true
+    end
+    
     return false
 end
 
@@ -81,29 +94,29 @@ local function parseBytecodeInstruction(instr)
         return "INVALID: Not a table"
     end
     
-    local opcode = instr[1] or 0
-    local A = instr[2] or 0
-    local B = instr[3]
-    local C = instr[4]
+    local parts = {}
+    for i = 1, 4 do
+        local val = instr[i]
+        if val == nil then
+            table.insert(parts, "nil")
+        else
+            table.insert(parts, tostring(val))
+        end
+    end
     
-    -- Handle different types for B and C
-    local B_str = (type(B) == "table") and "table" or tostring(B)
-    local C_str = (type(C) == "table") and "table" or tostring(C)
-    
-    local opname = opcodes[opcode] or "UNKNOWN_" .. tostring(opcode)
-    
-    return string.format("%s A=%s B=%s C=%s", opname, tostring(A), B_str, C_str)
+    return "[" .. table.concat(parts, ", ") .. "]"
 end
 
 local function extractConstants(bytecodeTable)
     local constants = {}
     
-    for _, instr in ipairs(bytecodeTable) do
+    for _, instr in pairs(bytecodeTable) do
         if type(instr) == "table" then
-            -- Check for string constants in positions 3 and 4
-            for i = 3, 4 do
-                if type(instr[i]) == "string" then
-                    table.insert(constants, instr[i])
+            -- Look for strings in any position
+            for i = 1, #instr do
+                local value = instr[i]
+                if type(value) == "string" then
+                    table.insert(constants, value)
                 end
             end
         end
@@ -112,115 +125,127 @@ local function extractConstants(bytecodeTable)
     return constants
 end
 
-local function analyzeBytecodePatterns(bytecodeTable)
-    local patterns = {
-        game_service_access = false,
-        require_calls = false,
-        string_operations = false,
-        table_operations = false
+local function analyzeTable(tbl)
+    local analysis = {
+        type = "unknown",
+        size = #tbl,
+        nestedTables = 0,
+        stringsFound = {},
+        numbersFound = 0
     }
     
-    local constants = extractConstants(bytecodeTable)
-    
-    for _, constant in ipairs(constants) do
-        if constant:match("GetService") then
-            patterns.game_service_access = true
-        end
-        if constant:match("require") then
-            patterns.require_calls = true
-        end
-        if constant:match("game") then
-            patterns.game_service_access = true
-        end
-        if constant:match("Module") then
-            patterns.require_calls = true
+    for _, item in pairs(tbl) do
+        if type(item) == "table" then
+            analysis.nestedTables = analysis.nestedTables + 1
+        elseif type(item) == "string" then
+            table.insert(analysis.stringsFound, item)
+        elseif type(item) == "number" then
+            analysis.numbersFound = analysis.numbersFound + 1
         end
     end
     
-    return patterns, constants
+    -- Determine type
+    if analysis.nestedTables > analysis.size * 0.3 then
+        analysis.type = "likely_bytecode"
+    elseif #analysis.stringsFound > 0 then
+        analysis.type = "string_data"
+    elseif analysis.numbersFound > 0 then
+        analysis.type = "numeric_data"
+    else
+        analysis.type = "mixed_data"
+    end
+    
+    return analysis
 end
 
-local function generateDeobfuscatedSource(bytecodeTable)
-    if not isBytecodeTable(bytecodeTable) then
-        return "-- Not a bytecode table\n" .. fmt(bytecodeTable)
-    end
+local function generateDeobfuscatedSource(tbl, tableIndex)
+    local analysis = analyzeTable(tbl)
+    local constants = extractConstants(tbl)
     
-    local patterns, constants = analyzeBytecodePatterns(bytecodeTable)
+    local source = string.format("-- Table #%d Analysis\n", tableIndex)
+    source = source .. string.format("-- Type: %s\n", analysis.type)
+    source = source .. string.format("-- Size: %d, Nested: %d, Numbers: %d\n", 
+        analysis.size, analysis.nestedTables, analysis.numbersFound)
     
-    local source = "-- Deobfuscated Bytecode Analysis\n"
-    source = source .. "-- Generated: " .. os.date("%Y-%m-%d %H:%M:%S") .. "\n"
-    source = source .. "-- Total Instructions: " .. #bytecodeTable .. "\n\n"
-    
-    -- Add common game references based on patterns
-    if patterns.game_service_access then
-        source = source .. "-- Game Services Detected\n"
-        source = source .. "local game = game\n"
-        source = source .. "local Players = game:GetService(\"Players\")\n"
-        source = source .. "local ReplicatedStorage = game:GetService(\"ReplicatedStorage\")\n"
-        source = source .. "local RunService = game:GetService(\"RunService\")\n\n"
-    end
-    
-    if patterns.require_calls then
-        source = source .. "-- Module System Detected\n"
-    end
-    
-    -- Add extracted constants
+    -- Add extracted strings/constants
     if #constants > 0 then
-        source = source .. "-- Extracted Constants (" .. #constants .. " found):\n"
+        source = source .. string.format("-- Extracted Strings (%d found):\n", #constants)
         for i, constant in ipairs(constants) do
-            if #constant < 50 then  -- Avoid huge strings
+            if #constant < 100 then
                 source = source .. string.format('-- [%d] "%s"\n', i, constant:gsub('"', '\\"'))
             else
-                source = source .. string.format('-- [%d] [long string: %d characters]\n', i, #constant)
+                source = source .. string.format('-- [%d] [long string: %d chars]\n', i, #constant)
             end
         end
-        source = source .. "\n"
     end
     
-    -- Add bytecode instructions as comments (limited to first 50 to avoid huge files)
-    source = source .. "-- Bytecode Instructions (showing first 50):\n"
-    local maxInstructions = math.min(50, #bytecodeTable)
-    for i = 1, maxInstructions do
-        local instr = bytecodeTable[i]
-        if type(instr) == "table" then
-            local instructionStr = parseBytecodeInstruction(instr)
-            source = source .. string.format("-- [%03d] %s\n", i, instructionStr)
+    -- Try to identify common patterns in the strings
+    local gameRefs = {}
+    local functionRefs = {}
+    
+    for _, constant in ipairs(constants) do
+        if constant:match("game") or constant:match("GetService") then
+            table.insert(gameRefs, constant)
+        elseif constant:match("function") or constant:match("local") then
+            table.insert(functionRefs, constant)
         end
     end
     
-    if #bytecodeTable > 50 then
-        source = source .. string.format("-- ... and %d more instructions\n", #bytecodeTable - 50)
+    if #gameRefs > 0 then
+        source = source .. "-- Game References Found:\n"
+        for _, ref in ipairs(gameRefs) do
+            source = source .. string.format('--   "%s"\n', ref)
+        end
+    end
+    
+    -- Show first few instructions if it looks like bytecode
+    if analysis.type == "likely_bytecode" then
+        source = source .. "-- First 10 Instructions:\n"
+        local count = 0
+        for i, instr in pairs(tbl) do
+            if type(instr) == "table" then
+                source = source .. string.format("-- [%d] %s\n", i, parseBytecodeInstruction(instr))
+                count = count + 1
+                if count >= 10 then break end
+            end
+        end
     end
     
     return source
 end
 
--- Enhanced unpack hook with deobfuscation
+-- Enhanced unpack hook - process EVERY table
 function unpack(...)
     local args = {...}
     local t = args[1]
     
     if type(t) == "table" then
-        local formatted = fmt(t)
-        output = output .. "\n" .. string.rep("-", 40) .. "\n"
-        output = output .. "CAPTURED TABLE (size: " .. #t .. ")\n"
-        output = output .. string.rep("-", 40) .. "\n"
-        output = output .. formatted .. "\n"
-        
+        local tableIndex = #captured + 1
         table.insert(captured, t)
-        print("[*] captured table, size:", #t)
         
-        -- Deobfuscate bytecode tables
-        if isBytecodeTable(t) then
-            print("[*] bytecode table detected, deobfuscating...")
-            local deobfuscatedSource = generateDeobfuscatedSource(t)
-            table.insert(deobfuscated, deobfuscatedSource)
-            output = output .. "\n" .. string.rep("=", 50) .. "\n"
-            output = output .. "DEOBFUSCATED ANALYSIS\n"
-            output = output .. string.rep("=", 50) .. "\n"
-            output = output .. deobfuscatedSource .. "\n"
+        print(string.format("[*] captured table #%d, size: %d", tableIndex, #t))
+        
+        -- Analyze EVERY table, not just "bytecode" ones
+        local analysis = analyzeTable(t)
+        print(string.format("[*] table #%d type: %s (nested: %d, strings: %d)", 
+            tableIndex, analysis.type, analysis.nestedTables, #analysis.stringsFound))
+        
+        -- Generate analysis for this table
+        local deobfuscatedSource = generateDeobfuscatedSource(t, tableIndex)
+        table.insert(deobfuscated, deobfuscatedSource)
+        
+        -- Add to output
+        output = output .. "\n" .. string.rep("=", 50) .. "\n"
+        output = output .. string.format("TABLE #%d ANALYSIS\n", tableIndex)
+        output = output .. string.rep("=", 50) .. "\n"
+        output = output .. deobfuscatedSource .. "\n"
+        
+        -- Show raw data for small tables
+        if #t <= 20 then
+            output = output .. "-- Raw Data:\n"
+            output = output .. fmt(t) .. "\n"
         else
-            print("[*] regular table, not bytecode")
+            output = output .. string.format("-- [Table too large to display: %d items]\n", #t)
         end
     end
     
@@ -230,18 +255,22 @@ end
 -- Enhanced loadstring hook
 loadstring = function(code, ...)
     if type(code) == "string" then
+        output = output .. "\n" .. string.rep("=", 50) .. "\n"
+        output = output .. "LOADSTRING CALLED\n"
+        output = output .. string.rep("=", 50) .. "\n"
+        output = output .. "Code length: " .. #code .. " characters\n"
+        
         if code:find("return function") and code:find("local d=") then
-            print("[*] moonsec v3 detected")
-            output = output .. "\n" .. string.rep("=", 50) .. "\n"
-            output = output .. "MOONSEC V3 DETECTED\n"
-            output = output .. string.rep("=", 50) .. "\n"
-            output = output .. "Code length: " .. #code .. " characters\n"
-            output = output .. string.rep("=", 50) .. "\n"
+            output = output .. "DETECTED: Moonsec V3\n"
+        elseif code:find("getfenv") and code:find("table.concat") then
+            output = output .. "DETECTED: Possible obfuscator\n"
         end
         
-        -- Detect other obfuscators
-        if code:find("getfenv") and code:find("table.concat") then
-            print("[*] possible other obfuscator detected")
+        -- Show first 200 chars of code
+        local preview = code:sub(1, 200)
+        output = output .. "Preview: " .. preview .. "\n"
+        if #code > 200 then
+            output = output .. "... [truncated]\n"
         end
     end
     return og_load(code, ...)
@@ -254,29 +283,24 @@ local function save()
     -- Combine all deobfuscated sources
     local allDeobfuscated = ""
     if #deobfuscated > 0 then
-        allDeobfuscated = "-- DEOBFUSCATED SOURCES\n"
+        allDeobfuscated = "-- DEOBFUSCATED ANALYSIS RESULTS\n"
         allDeobfuscated = allDeobfuscated .. string.rep("=", 50) .. "\n\n"
         for i, source in ipairs(deobfuscated) do
-            allDeobfuscated = allDeobfuscated .. string.format("-- File %d/%d\n", i, #deobfuscated)
             allDeobfuscated = allDeobfuscated .. source
             allDeobfuscated = allDeobfuscated .. "\n" .. string.rep("-", 40) .. "\n\n"
         end
     else
-        allDeobfuscated = "-- No bytecode tables were deobfuscated\n"
-        allDeobfuscated = allDeobfuscated .. "-- Only regular tables were captured\n"
+        allDeobfuscated = "-- No tables were captured\n"
     end
     
     local result = string.format([[
-========================================
-RAT'S DUMP & DEOBFUSCATION RESULTS
-========================================
+RAT'S DEOBFUSCATOR RESULTS
 Timestamp: %s
-Tables Captured: %d
-Bytecode Tables Deobfuscated: %d
+Total Tables Captured: %d
 
-=== RAW CAPTURED DATA ===
+=== ANALYSIS RESULTS ===
 %s
-]], os.date("%Y-%m-%d %H:%M:%S"), #captured, #deobfuscated, output)
+]], os.date("%Y-%m-%d %H:%M:%S"), #captured, allDeobfuscated)
     
     if write(file, result) then
         print("[+] saved dump:", file)
@@ -287,10 +311,10 @@ Bytecode Tables Deobfuscated: %d
     end
     
     if clip(allDeobfuscated) then
-        print("[+] deobfuscated code copied to clipboard")
+        print("[+] analysis copied to clipboard")
     end
     
-    print("[+] complete - tables:", #captured, "deobfuscated:", #deobfuscated)
+    print("[+] complete - tables analyzed:", #captured)
 end
 
 -- Auto-save when player leaves (for Roblox)
@@ -309,29 +333,27 @@ if game then
     end)
 end
 
-print("[*] advanced deobfuscator ready")
+print("[*] universal deobfuscator ready")
+print("[*] will analyze ALL captured tables")
 print("[*] execute obfuscated script")
-print("[*] features: bytecode analysis, constant extraction, pattern detection")
 
--- Better monitoring with periodic status
+-- Better monitoring
 task.spawn(function()
-    local checks = 0
     while true do
-        task.wait(2)
-        checks = checks + 1
-        if #captured > 0 or #deobfuscated > 0 then
-            print(string.format("[*] status: %d tables, %d deobfuscated", #captured, #deobfuscated))
-        elseif checks % 5 == 0 then
-            print("[*] monitoring... no data captured yet")
+        task.wait(3)
+        if #captured > 0 then
+            print(string.format("[*] status: %d tables captured and analyzed", #captured))
+        else
+            print("[*] monitoring... waiting for tables")
         end
     end
 end)
 
--- Auto-save after 10 seconds if we have data
+-- Auto-save after 8 seconds
 task.spawn(function()
-    task.wait(10)
+    task.wait(8)
     if #captured > 0 then
-        print("[*] auto-saving after 10 seconds")
+        print("[*] auto-saving captured data")
         save()
     end
 end)
