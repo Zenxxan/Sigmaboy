@@ -64,12 +64,11 @@ end
 local function isBytecodeTable(tbl)
     if type(tbl) ~= "table" or #tbl == 0 then return false end
     
-    -- Check if it has bytecode structure: {opcode, A, B, C}
-    local first = tbl[1]
-    if type(first) == "table" and (first[1] or first[2]) then
-        for i, instr in ipairs(tbl) do
-            if type(instr) == "table" and (instr[1] ~= nil or instr[2] ~= nil) then
-                -- Likely bytecode instruction
+    -- Check if it has bytecode structure: nested tables with numbers
+    for i, item in ipairs(tbl) do
+        if type(item) == "table" then
+            -- Check if first element is a number (opcode)
+            if type(item[1]) == "number" then
                 return true
             end
         end
@@ -78,35 +77,39 @@ local function isBytecodeTable(tbl)
 end
 
 local function parseBytecodeInstruction(instr)
-    if type(instr) ~= "table" or #instr < 2 then return "INVALID" end
+    if type(instr) ~= "table" then 
+        return "INVALID: Not a table"
+    end
     
     local opcode = instr[1] or 0
     local A = instr[2] or 0
-    local B = instr[3] or 0
-    local C = instr[4] or 0
+    local B = instr[3]
+    local C = instr[4]
+    
+    -- Handle different types for B and C
+    local B_str = (type(B) == "table") and "table" or tostring(B)
+    local C_str = (type(C) == "table") and "table" or tostring(C)
     
     local opname = opcodes[opcode] or "UNKNOWN_" .. tostring(opcode)
     
-    return string.format("%s A=%d B=%s C=%s", opname, A, tostring(B), tostring(C))
+    return string.format("%s A=%s B=%s C=%s", opname, tostring(A), B_str, C_str)
 end
 
 local function extractConstants(bytecodeTable)
     local constants = {}
-    local strings = {}
     
     for _, instr in ipairs(bytecodeTable) do
         if type(instr) == "table" then
-            -- Check for string constants
-            if type(instr[3]) == "string" then
-                table.insert(strings, instr[3])
-            end
-            if type(instr[4]) == "string" then
-                table.insert(strings, instr[4])
+            -- Check for string constants in positions 3 and 4
+            for i = 3, 4 do
+                if type(instr[i]) == "string" then
+                    table.insert(constants, instr[i])
+                end
             end
         end
     end
     
-    return strings
+    return constants
 end
 
 local function analyzeBytecodePatterns(bytecodeTable)
@@ -129,62 +132,64 @@ local function analyzeBytecodePatterns(bytecodeTable)
         if constant:match("game") then
             patterns.game_service_access = true
         end
+        if constant:match("Module") then
+            patterns.require_calls = true
+        end
     end
     
-    return patterns
+    return patterns, constants
 end
 
 local function generateDeobfuscatedSource(bytecodeTable)
     if not isBytecodeTable(bytecodeTable) then
-        return "-- Not a bytecode table\n"
+        return "-- Not a bytecode table\n" .. fmt(bytecodeTable)
     end
     
-    local constants = extractConstants(bytecodeTable)
-    local patterns = analyzeBytecodePatterns(bytecodeTable)
+    local patterns, constants = analyzeBytecodePatterns(bytecodeTable)
     
     local source = "-- Deobfuscated Bytecode Analysis\n"
-    source = source .. "-- Generated: " .. os.date("%Y-%m-%d %H:%M:%S") .. "\n\n"
+    source = source .. "-- Generated: " .. os.date("%Y-%m-%d %H:%M:%S") .. "\n"
+    source = source .. "-- Total Instructions: " .. #bytecodeTable .. "\n\n"
     
-    -- Add common game references
+    -- Add common game references based on patterns
     if patterns.game_service_access then
+        source = source .. "-- Game Services Detected\n"
         source = source .. "local game = game\n"
         source = source .. "local Players = game:GetService(\"Players\")\n"
         source = source .. "local ReplicatedStorage = game:GetService(\"ReplicatedStorage\")\n"
         source = source .. "local RunService = game:GetService(\"RunService\")\n\n"
     end
     
-    -- Add extracted constants as potential variables
+    if patterns.require_calls then
+        source = source .. "-- Module System Detected\n"
+    end
+    
+    -- Add extracted constants
     if #constants > 0 then
-        source = source .. "-- Extracted Constants:\n"
+        source = source .. "-- Extracted Constants (" .. #constants .. " found):\n"
         for i, constant in ipairs(constants) do
-            if #constant < 100 then  -- Avoid huge strings
-                source = source .. string.format('-- constant_%d = "%s"\n', i, constant:gsub('"', '\\"'))
+            if #constant < 50 then  -- Avoid huge strings
+                source = source .. string.format('-- [%d] "%s"\n', i, constant:gsub('"', '\\"'))
+            else
+                source = source .. string.format('-- [%d] [long string: %d characters]\n', i, #constant)
             end
         end
         source = source .. "\n"
     end
     
-    -- Add bytecode instructions as comments
-    source = source .. "-- Bytecode Instructions:\n"
-    for i, instr in ipairs(bytecodeTable) do
+    -- Add bytecode instructions as comments (limited to first 50 to avoid huge files)
+    source = source .. "-- Bytecode Instructions (showing first 50):\n"
+    local maxInstructions = math.min(50, #bytecodeTable)
+    for i = 1, maxInstructions do
+        local instr = bytecodeTable[i]
         if type(instr) == "table" then
             local instructionStr = parseBytecodeInstruction(instr)
-            source = source .. string.format("-- [%d] %s\n", i, instructionStr)
+            source = source .. string.format("-- [%03d] %s\n", i, instructionStr)
         end
     end
     
-    -- Try to reconstruct simple logic
-    source = source .. "\n-- Reconstructed Logic:\n"
-    for _, constant in ipairs(constants) do
-        if constant == "LocalPlayer" then
-            source = source .. "local player = Players.LocalPlayer\n"
-        elseif constant == "Character" then
-            source = source .. "local character = player.Character or player.CharacterAdded:Wait()\n"
-        elseif constant == "Humanoid" then
-            source = source .. "local humanoid = character:WaitForChild(\"Humanoid\")\n"
-        elseif constant:match("^Modules%.") then
-            source = source .. string.format('local module = require("%s")\n', constant)
-        end
+    if #bytecodeTable > 50 then
+        source = source .. string.format("-- ... and %d more instructions\n", #bytecodeTable - 50)
     end
     
     return source
@@ -197,7 +202,11 @@ function unpack(...)
     
     if type(t) == "table" then
         local formatted = fmt(t)
-        output = output .. "\n" .. formatted .. "\n\n"
+        output = output .. "\n" .. string.rep("-", 40) .. "\n"
+        output = output .. "CAPTURED TABLE (size: " .. #t .. ")\n"
+        output = output .. string.rep("-", 40) .. "\n"
+        output = output .. formatted .. "\n"
+        
         table.insert(captured, t)
         print("[*] captured table, size:", #t)
         
@@ -206,7 +215,12 @@ function unpack(...)
             print("[*] bytecode table detected, deobfuscating...")
             local deobfuscatedSource = generateDeobfuscatedSource(t)
             table.insert(deobfuscated, deobfuscatedSource)
-            output = output .. "\n" .. deobfuscatedSource .. "\n"
+            output = output .. "\n" .. string.rep("=", 50) .. "\n"
+            output = output .. "DEOBFUSCATED ANALYSIS\n"
+            output = output .. string.rep("=", 50) .. "\n"
+            output = output .. deobfuscatedSource .. "\n"
+        else
+            print("[*] regular table, not bytecode")
         end
     end
     
@@ -221,12 +235,13 @@ loadstring = function(code, ...)
             output = output .. "\n" .. string.rep("=", 50) .. "\n"
             output = output .. "MOONSEC V3 DETECTED\n"
             output = output .. string.rep("=", 50) .. "\n"
-            output = output .. code .. "\n\n"
+            output = output .. "Code length: " .. #code .. " characters\n"
+            output = output .. string.rep("=", 50) .. "\n"
         end
         
         -- Detect other obfuscators
         if code:find("getfenv") and code:find("table.concat") then
-            print("[*] possible obfuscated script detected")
+            print("[*] possible other obfuscator detected")
         end
     end
     return og_load(code, ...)
@@ -237,23 +252,31 @@ local function save()
     local deobfuscatedFile = "deobfuscated_" .. os.time() .. ".lua"
     
     -- Combine all deobfuscated sources
-    local allDeobfuscated = table.concat(deobfuscated, "\n" .. string.rep("=", 60) .. "\n")
+    local allDeobfuscated = ""
+    if #deobfuscated > 0 then
+        allDeobfuscated = "-- DEOBFUSCATED SOURCES\n"
+        allDeobfuscated = allDeobfuscated .. string.rep("=", 50) .. "\n\n"
+        for i, source in ipairs(deobfuscated) do
+            allDeobfuscated = allDeobfuscated .. string.format("-- File %d/%d\n", i, #deobfuscated)
+            allDeobfuscated = allDeobfuscated .. source
+            allDeobfuscated = allDeobfuscated .. "\n" .. string.rep("-", 40) .. "\n\n"
+        end
+    else
+        allDeobfuscated = "-- No bytecode tables were deobfuscated\n"
+        allDeobfuscated = allDeobfuscated .. "-- Only regular tables were captured\n"
+    end
     
     local result = string.format([[
 ========================================
 RAT'S DUMP & DEOBFUSCATION RESULTS
 ========================================
-Captured: %s
-Tables: %d
-Deobfuscated Files: %d
+Timestamp: %s
+Tables Captured: %d
+Bytecode Tables Deobfuscated: %d
 
-=== CAPTURED TABLES ===
+=== RAW CAPTURED DATA ===
 %s
-
-=== DEOBFUSCATED SOURCES ===
-%s
-========================================
-]], os.date("%Y-%m-%d %H:%M:%S"), #captured, #deobfuscated, output, allDeobfuscated)
+]], os.date("%Y-%m-%d %H:%M:%S"), #captured, #deobfuscated, output)
     
     if write(file, result) then
         print("[+] saved dump:", file)
@@ -263,19 +286,24 @@ Deobfuscated Files: %d
         print("[+] saved deobfuscated:", deobfuscatedFile)
     end
     
-    if clip(result) then
-        print("[+] copied to clipboard")
+    if clip(allDeobfuscated) then
+        print("[+] deobfuscated code copied to clipboard")
     end
-    print("[+] complete, tables:", #captured, "deobfuscated:", #deobfuscated)
+    
+    print("[+] complete - tables:", #captured, "deobfuscated:", #deobfuscated)
 end
 
 -- Auto-save when player leaves (for Roblox)
 if game then
-    game:GetService("Players").LocalPlayer:GetPropertyChangedSignal("Parent"):Connect(save)
+    game:GetService("Players").LocalPlayer:GetPropertyChangedSignal("Parent"):Connect(function()
+        print("[*] player leaving, saving...")
+        save()
+    end)
     
     -- Manual save with F9
     game:GetService("UserInputService").InputBegan:Connect(function(input)
         if input.KeyCode == Enum.KeyCode.F9 then
+            print("[*] manual save triggered")
             save()
         end
     end)
@@ -285,11 +313,25 @@ print("[*] advanced deobfuscator ready")
 print("[*] execute obfuscated script")
 print("[*] features: bytecode analysis, constant extraction, pattern detection")
 
+-- Better monitoring with periodic status
 task.spawn(function()
-    task.wait(5)
-    if #captured > 0 or #deobfuscated > 0 then
+    local checks = 0
+    while true do
+        task.wait(2)
+        checks = checks + 1
+        if #captured > 0 or #deobfuscated > 0 then
+            print(string.format("[*] status: %d tables, %d deobfuscated", #captured, #deobfuscated))
+        elseif checks % 5 == 0 then
+            print("[*] monitoring... no data captured yet")
+        end
+    end
+end)
+
+-- Auto-save after 10 seconds if we have data
+task.spawn(function()
+    task.wait(10)
+    if #captured > 0 then
+        print("[*] auto-saving after 10 seconds")
         save()
-    else
-        print("[*] no data captured yet, still monitoring...")
     end
 end)
